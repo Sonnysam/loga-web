@@ -8,11 +8,9 @@ import { ArrowRight, Users, BookOpen, Calendar } from "lucide-react";
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Clean modern header with image logo */}
       <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
-            {/* Image logo placeholder - replace with your actual logo */}
             <div className="relative w-10 h-10">
               <Image src="/loga.png" alt="LOGA Logo" width={60} height={60} className="w-full h-full object-contain" />
             </div>
