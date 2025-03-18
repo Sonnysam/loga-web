@@ -8,7 +8,6 @@ import { Home, Calendar, Briefcase, MessageSquare, Settings, LogOut, Menu, X, Sh
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function DashboardSidebar() {
     const { userRole } = useAuth();
@@ -26,90 +25,70 @@ export default function DashboardSidebar() {
             : []),
     ];
 
+    const isActive = (path: string) => pathname === path;
+
     return (
         <>
-            {/* Mobile Header */}
-            <div className="fixed top-0 left-0 right-0 h-16 border-b bg-background/95 backdrop-blur z-50 flex md:hidden items-center px-4">
-                <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                    <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="md:hidden">
-                            <Menu className="h-5 w-5" />
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-64">
-                        <nav className="flex flex-col h-full">
-                            <div className="p-4 border-b">
-                                <h2 className="font-semibold">LOGA Alumni Portal</h2>
-                            </div>
-                            <div className="flex-1 px-2 py-2">
-                                {menuItems.map((item) => (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={() => setIsOpen(false)}
-                                        className={cn(
-                                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                                            pathname === item.href
-                                                ? "bg-primary text-primary-foreground"
-                                                : "hover:bg-accent hover:text-accent-foreground"
-                                        )}
-                                    >
-                                        <item.icon className="h-4 w-4" />
-                                        {item.label}
-                                    </Link>
-                                ))}
-                            </div>
-                            <div className="p-4 border-t">
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start gap-3"
-                                    onClick={() => auth.signOut()}
-                                >
-                                    <LogOut className="h-4 w-4" />
-                                    Logout
-                                </Button>
-                            </div>
-                        </nav>
-                    </SheetContent>
-                </Sheet>
-                <div className="flex-1 flex justify-center">
-                    <h1 className="font-semibold">LOGA Alumni Portal</h1>
+            <div className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="flex h-16 items-center gap-4 px-4">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="md:hidden"
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    </Button>
+                    <h2 className="text-lg font-semibold">LOGA Alumni Portal</h2>
                 </div>
             </div>
 
-            {/* Desktop Sidebar */}
-            <aside className="fixed hidden md:flex h-screen w-64 flex-col border-r bg-background">
-                <div className="p-6 border-b">
-                    <h2 className="font-semibold">LOGA Alumni Portal</h2>
-                </div>
-                <nav className="flex-1 px-4 py-6">
-                    {menuItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors mb-1",
-                                pathname === item.href
-                                    ? "bg-primary text-primary-foreground"
-                                    : "hover:bg-accent hover:text-accent-foreground"
-                            )}
-                        >
-                            <item.icon className="h-4 w-4" />
-                            {item.label}
-                        </Link>
-                    ))}
-                </nav>
-                <div className="p-6 border-t">
+            <div
+                className={cn(
+                    "fixed inset-y-0 left-0 z-40 w-64 bg-card border-r transform transition-transform duration-200 ease-in-out md:translate-x-0 pt-16",
+                    isOpen ? "translate-x-0" : "-translate-x-full"
+                )}
+            >
+                <div className="flex flex-col h-full p-4">
+                    <div className="mb-8 pt-4">
+                        <h2 className="text-2xl font-bold text-center">Alumni Portal</h2>
+                    </div>
+
+                    <nav className="space-y-2 flex-1">
+                        {menuItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    onClick={() => setIsOpen(false)}
+                                    className={cn(
+                                        "flex items-center gap-3 px-4 py-2 rounded-md transition-colors",
+                                        isActive(item.href)
+                                            ? "bg-primary text-primary-foreground"
+                                            : "hover:bg-accent"
+                                    )}
+                                >
+                                    <Icon size={20} />
+                                    <span>{item.label}</span>
+                                </Link>
+                            );
+                        })}
+                    </nav>
+
                     <Button
                         variant="ghost"
-                        className="w-full justify-start gap-3"
-                        onClick={() => auth.signOut()}
+                        className="flex items-center gap-3 text-destructive hover:bg-destructive/10 mt-auto"
+                        onClick={() => {
+                            auth.signOut();
+                            setIsOpen(false);
+                        }}
                     >
-                        <LogOut className="h-4 w-4" />
-                        Logout
+                        <LogOut size={20} />
+                        <span>Logout</span>
                     </Button>
                 </div>
-            </aside>
+            </div>
         </>
     );
 } 

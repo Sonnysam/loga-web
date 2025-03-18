@@ -52,9 +52,9 @@ export default function LoginPage() {
         <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
             <div className="w-full max-w-md space-y-6">
                 <div className="text-center space-y-2">
-                    <Link href="/" className="flex justify-center">
+                    <div className="flex justify-center">
                         <Image src="/loga.png" alt="LOGA Logo" width={150} height={150} />
-                    </Link>
+                    </div>
                     <h1 className="text-3xl font-bold">Welcome Back</h1>
                     <p className="text-muted-foreground">
                         Login to your account

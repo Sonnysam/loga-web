@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useForum } from "@/hooks/useForum";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
     Dialog,
     DialogContent,
@@ -21,20 +22,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-import { MessageSquare, Edit2, Trash2, Send } from "lucide-react";
+import { useForum } from "@/hooks/useForum";
+import type { ForumPost } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 function ForumSkeleton() {
     return (
         <Card>
             <CardHeader>
                 <Skeleton className="h-6 w-2/3" />
+                <Skeleton className="h-4 w-1/3 mt-2" />
             </CardHeader>
-            <CardContent className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
+            <CardContent>
+                <Skeleton className="h-20 w-full" />
             </CardContent>
         </Card>
     );
@@ -42,29 +45,31 @@ function ForumSkeleton() {
 
 export default function ForumPage() {
     const { user, userRole } = useAuth();
-    const { posts, loading, createPost, updatePost, deletePost, addComment, deleteComment } = useForum();
+    const { posts, loading, deletePost, addComment } = useForum();
     const [isOpen, setIsOpen] = useState(false);
-    const [editingPost, setEditingPost] = useState<ForumPost | null>(null);
+    const [activeTab, setActiveTab] = useState<ForumPost["category"]>("general");
     const [newPost, setNewPost] = useState({
         title: "",
         content: "",
         category: "general" as ForumPost["category"],
     });
-    const [newComment, setNewComment] = useState<Record<string, string>>({});
+    const [newComment, setNewComment] = useState("");
+    const [commentingOn, setCommentingOn] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (editingPost) {
-                await updatePost(editingPost.id, newPost);
-                toast.success("Post updated successfully");
-            } else {
-                await createPost({
-                    ...newPost,
-                    author: user!.uid,
-                });
-                toast.success("Post created successfully");
+            if (!newPost.title.trim() || !newPost.content.trim()) {
+                toast.error("Please fill in all fields");
+                return;
             }
+
+            await addDoc(collection(db, "forum"), {
+                ...newPost,
+                author: user?.uid,
+                createdAt: serverTimestamp(),
+                comments: [],
+            });
 
             setIsOpen(false);
             setNewPost({
@@ -72,60 +77,46 @@ export default function ForumPage() {
                 content: "",
                 category: "general",
             });
-            setEditingPost(null);
+            toast.success("Post created successfully");
         } catch (error) {
-            toast.error("Failed to save post");
-            console.error("Error saving post:", error);
-        }
-    };
-
-    const handleEdit = (post: ForumPost) => {
-        setEditingPost(post);
-        setNewPost({
-            title: post.title,
-            content: post.content,
-            category: post.category,
-        });
-        setIsOpen(true);
-    };
-
-    const handleDelete = async (id: string) => {
-        try {
-            await deletePost(id);
-            toast.success("Post deleted successfully");
-        } catch (error) {
-            toast.error("Failed to delete post");
-            console.error("Error deleting post:", error);
+            console.error("Error creating post:", error);
+            toast.error("Failed to create post");
         }
     };
 
     const handleComment = async (postId: string) => {
-        try {
-            const comment = newComment[postId];
-            if (!comment?.trim()) return;
+        if (!newComment.trim()) {
+            toast.error("Please write a comment");
+            return;
+        }
 
+        try {
             await addComment(postId, {
-                content: comment,
-                author: user!.uid,
+                content: newComment,
+                author: user?.uid || "",
             });
-
-            setNewComment((prev) => ({ ...prev, [postId]: "" }));
             toast.success("Comment added successfully");
+            setNewComment("");
+            setCommentingOn(null);
         } catch (error) {
-            toast.error("Failed to add comment");
             console.error("Error adding comment:", error);
+            toast.error("Failed to add comment");
         }
     };
 
-    const handleDeleteComment = async (postId: string, commentId: string) => {
+    const handleDeletePost = async (postId: string) => {
         try {
-            await deleteComment(postId, commentId);
-            toast.success("Comment deleted successfully");
+            await deletePost(postId);
+            toast.success("Post deleted successfully");
         } catch (error) {
-            toast.error("Failed to delete comment");
-            console.error("Error deleting comment:", error);
+            console.error("Error deleting post:", error);
+            toast.error("Failed to delete post");
         }
     };
+
+    const filteredPosts = posts.filter((post) =>
+        activeTab === post.category
+    );
 
     return (
         <div className="space-y-6">
@@ -135,9 +126,9 @@ export default function ForumPage() {
                     <DialogTrigger asChild>
                         <Button>Create Post</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px]">
+                    <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>{editingPost ? "Edit Post" : "Create New Post"}</DialogTitle>
+                            <DialogTitle>Create New Post</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <Input
@@ -146,154 +137,130 @@ export default function ForumPage() {
                                 onChange={(e) =>
                                     setNewPost({ ...newPost, title: e.target.value })
                                 }
-                                required
                             />
+                            <Select
+                                value={newPost.category}
+                                onValueChange={(value: ForumPost["category"]) =>
+                                    setNewPost({ ...newPost, category: value })
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="general">General</SelectItem>
+                                    <SelectItem value="career">Career</SelectItem>
+                                    <SelectItem value="networking">Networking</SelectItem>
+                                    <SelectItem value="memories">Memories</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <Textarea
-                                placeholder="Content"
+                                placeholder="Write your post..."
                                 value={newPost.content}
                                 onChange={(e) =>
                                     setNewPost({ ...newPost, content: e.target.value })
                                 }
-                                required
                             />
-                            <Select
-                                value={newPost.category}
-                                onValueChange={(value) =>
-                                    setNewPost({ ...newPost, category: value as ForumPost["category"] })
-                                }
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="career">Career</SelectItem>
-                                    <SelectItem value="networking">Networking</SelectItem>
-                                    <SelectItem value="memories">Memories</SelectItem>
-                                    <SelectItem value="general">General</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Button type="submit">
-                                {editingPost ? "Update Post" : "Create Post"}
-                            </Button>
+                            <Button type="submit">Post</Button>
                         </form>
                     </DialogContent>
                 </Dialog>
             </div>
 
-            {loading ? (
-                <div className="space-y-4">
-                    <ForumSkeleton />
-                    <ForumSkeleton />
-                    <ForumSkeleton />
-                </div>
-            ) : posts.length === 0 ? (
-                <Card>
-                    <CardContent className="py-8">
-                        <div className="text-center">
-                            <h3 className="text-lg font-semibold">No posts yet</h3>
-                            <p className="text-muted-foreground mt-1">
-                                Start a discussion by creating a new post
-                            </p>
+            <Tabs defaultValue="general" onValueChange={(v) => setActiveTab(v as ForumPost["category"])}>
+                <TabsList>
+                    <TabsTrigger value="general">General</TabsTrigger>
+                    <TabsTrigger value="career">Career</TabsTrigger>
+                    <TabsTrigger value="networking">Networking</TabsTrigger>
+                    <TabsTrigger value="memories">Memories</TabsTrigger>
+                </TabsList>
+
+                <div className="mt-6">
+                    {loading ? (
+                        <div className="space-y-6">
+                            {[...Array(3)].map((_, i) => (
+                                <ForumSkeleton key={i} />
+                            ))}
                         </div>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="space-y-4">
-                    {posts.map((post) => (
-                        <Card key={post.id}>
-                            <CardHeader>
-                                <CardTitle>{post.title}</CardTitle>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <span className="capitalize">{post.category}</span>
-                                    <span>•</span>
-                                    <span>
-                                        {formatDistanceToNow(new Date(post.createdAt), {
-                                            addSuffix: true,
-                                        })}
-                                    </span>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="whitespace-pre-wrap">{post.content}</p>
-                                {post.comments.length > 0 && (
-                                    <div className="mt-4 space-y-3">
-                                        <h4 className="font-medium">Comments</h4>
-                                        {post.comments.map((comment) => (
-                                            <div
-                                                key={comment.id}
-                                                className="flex items-start gap-2 text-sm"
-                                            >
-                                                <MessageSquare className="h-4 w-4 mt-1" />
-                                                <div className="flex-1">
-                                                    <p>{comment.content}</p>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {formatDistanceToNow(new Date(comment.createdAt), {
-                                                            addSuffix: true,
-                                                        })}
-                                                    </span>
-                                                </div>
-                                                {(userRole?.isAdmin || user?.uid === comment.author) && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            handleDeleteComment(post.id, comment.id)
-                                                        }
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                )}
+                    ) : (
+                        <div className="space-y-6">
+                            {filteredPosts.map((post) => (
+                                <Card key={post.id}>
+                                    <CardHeader>
+                                        <CardTitle>{post.title}</CardTitle>
+                                        <p className="text-sm text-muted-foreground">
+                                            Posted {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                                        </p>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="whitespace-pre-wrap">{post.content}</p>
+
+                                        {post.comments.length > 0 && (
+                                            <div className="mt-4 space-y-3">
+                                                <h3 className="font-medium">Comments</h3>
+                                                {post.comments.map((comment) => (
+                                                    <div key={comment.id} className="pl-4 border-l-2">
+                                                        <p>{comment.content}</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                                        </p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                            <CardFooter className="flex-col gap-4">
-                                <div className="flex w-full gap-2">
-                                    <Input
-                                        placeholder="Add a comment..."
-                                        value={newComment[post.id] || ""}
-                                        onChange={(e) =>
-                                            setNewComment((prev) => ({
-                                                ...prev,
-                                                [post.id]: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => handleComment(post.id)}
-                                    >
-                                        <Send className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                {(userRole?.isAdmin || user?.uid === post.author) && (
-                                    <div className="flex w-full justify-end gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleEdit(post)}
-                                        >
-                                            <Edit2 className="h-4 w-4" />
-                                            Edit
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDelete(post.id)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                            Delete
-                                        </Button>
-                                    </div>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    ))}
+                                        )}
+                                    </CardContent>
+                                    <CardFooter className="flex flex-col items-start gap-4">
+                                        {commentingOn === post.id ? (
+                                            <div className="w-full space-y-2">
+                                                <Textarea
+                                                    placeholder="Write a comment..."
+                                                    value={newComment}
+                                                    onChange={(e) => setNewComment(e.target.value)}
+                                                />
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleComment(post.id)}
+                                                    >
+                                                        Post Comment
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setCommentingOn(null)}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCommentingOn(post.id)}
+                                            >
+                                                Add Comment
+                                            </Button>
+                                        )}
+
+                                        {(userRole?.isAdmin || user?.uid === post.author) && (
+                                            <div className="flex gap-2 mt-2">
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => handleDeletePost(post.id)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
+            </Tabs>
         </div>
     );
 } 

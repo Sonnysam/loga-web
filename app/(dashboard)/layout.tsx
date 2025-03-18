@@ -9,9 +9,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <ProtectedRoute>
             <div className="min-h-screen">
                 <DashboardSidebar />
-                <main className="md:pl-64 pt-20 md:pt-4 px-4 pb-4 max-w-7xl mx-auto">
-                    {children}
-                </main>
+                <main className="md:pl-64 pt-16 p-4 max-w-7xl mx-auto">{children}</main>
             </div>
         </ProtectedRoute>
     );

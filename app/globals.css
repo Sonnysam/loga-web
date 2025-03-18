@@ -128,7 +128,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 261 100% 28%;
     --primary: 261 100% 28%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 210 40% 98%;
     --secondary: 261 30% 96%;
     --secondary-foreground: 261 100% 28%;
     --muted: 261 30% 96%;
@@ -136,7 +136,7 @@
     --accent: 261 30% 96%;
     --accent-foreground: 261 100% 28%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 210 40% 98%;
     --border: 261 30% 90%;
     --input: 261 30% 90%;
     --ring: 261 100% 28%;
@@ -146,11 +146,7 @@
 
 /* Modern gradient for hero section */
 .hero-gradient {
-  background: linear-gradient(
-    135deg,
-    rgba(46, 0, 143, 0.05),
-    rgba(46, 0, 143, 0.1)
-  );
+  background: linear-gradient(135deg, hsl(261 100% 98%), hsl(261 100% 95%));
 }
 
 .card-hover-effect {
@@ -159,7 +155,7 @@
 
 .card-hover-effect:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -10px rgba(46, 0, 143, 0.2);
+  box-shadow: 0 10px 20px -10px hsl(261 100% 28% / 0.1);
 }
 
 /* @tailwind base;

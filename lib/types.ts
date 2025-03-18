@@ -24,9 +24,9 @@ export interface ForumPost {
   id: string;
   title: string;
   content: string;
-  category: "career" | "networking" | "memories" | "general";
+  category: "general" | "career" | "networking" | "memories";
   author: string;
-  createdAt: string;
+  createdAt: any;
   comments: Comment[];
 }
 
@@ -34,7 +34,7 @@ export interface Comment {
   id: string;
   content: string;
   author: string;
-  createdAt: string;
+  createdAt: any;
 }
 
 export interface User {

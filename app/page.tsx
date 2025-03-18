@@ -1,6 +1,5 @@
 
 
-
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ export default function Home() {
           <Link href="/" className="flex items-center space-x-2">
             {/* Image logo placeholder - replace with your actual logo */}
             <div className="relative w-10 h-10">
-              <Image src="/loga.png" alt="LOGA Logo" width={60} height={60} className="object-contain" />
+              <Image src="/loga.png" alt="LOGA Logo" width={60} height={60} className="w-full h-full object-contain" />
             </div>
             <span className="text-xl font-bold text-[#2E008F]">LOGA</span>
           </Link>
@@ -108,7 +107,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <Image src="/loga.png" alt="LOGA Logo" width={60} height={60} className="object-contain" />
+              <Image src="/loga.png" alt="LOGA Logo" width={60} height={60} className="w-8 h-8 object-contain" />
               <span className="text-sm font-medium text-gray-700">LOGA Alumni Portal</span>
             </div>
             <div className="flex space-x-6">
