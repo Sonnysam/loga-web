@@ -189,7 +189,7 @@ export default function ForumPage() {
                                     <CardHeader>
                                         <CardTitle>{post.title}</CardTitle>
                                         <p className="text-sm text-muted-foreground">
-                                            Posted {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                                            Posted {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
                                         </p>
                                     </CardHeader>
                                     <CardContent>
@@ -202,7 +202,7 @@ export default function ForumPage() {
                                                     <div key={comment.id} className="pl-4 border-l-2">
                                                         <p>{comment.content}</p>
                                                         <p className="text-sm text-muted-foreground">
-                                                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                                            {formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true })}
                                                         </p>
                                                     </div>
                                                 ))}
