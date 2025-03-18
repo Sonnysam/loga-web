@@ -1,16 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import {
   collection,
-  onSnapshot,
-  orderBy,
   query,
-  doc,
-  deleteDoc,
-  updateDoc,
+  orderBy,
+  onSnapshot,
   addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
   serverTimestamp,
-  arrayUnion,
 } from "firebase/firestore";
 import type { ForumPost, Comment } from "@/lib/types";
 
@@ -34,11 +33,17 @@ export function useForum() {
     return () => unsubscribe();
   }, []);
 
-  const deletePost = async (id: string) => {
+  const createPost = async (
+    data: Omit<ForumPost, "id" | "createdAt" | "comments">
+  ) => {
     try {
-      await deleteDoc(doc(db, "forum", id));
+      await addDoc(collection(db, "forum"), {
+        ...data,
+        createdAt: serverTimestamp(),
+        comments: [],
+      });
     } catch (error) {
-      console.error("Error deleting post:", error);
+      throw error;
     }
   };
 
@@ -46,7 +51,15 @@ export function useForum() {
     try {
       await updateDoc(doc(db, "forum", id), data);
     } catch (error) {
-      console.error("Error updating post:", error);
+      throw error;
+    }
+  };
+
+  const deletePost = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "forum", id));
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -55,20 +68,43 @@ export function useForum() {
     comment: Omit<Comment, "id" | "createdAt">
   ) => {
     try {
-      const postRef = doc(db, "forum", postId);
+      const post = posts.find((p) => p.id === postId);
+      if (!post) throw new Error("Post not found");
+
       const newComment = {
+        id: Math.random().toString(36).substr(2, 9),
         ...comment,
-        id: crypto.randomUUID(),
-        createdAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
       };
 
-      await updateDoc(postRef, {
-        comments: arrayUnion(newComment),
+      await updateDoc(doc(db, "forum", postId), {
+        comments: [...post.comments, newComment],
       });
     } catch (error) {
-      console.error("Error adding comment:", error);
+      throw error;
     }
   };
 
-  return { posts, loading, deletePost, updatePost, addComment };
+  const deleteComment = async (postId: string, commentId: string) => {
+    try {
+      const post = posts.find((p) => p.id === postId);
+      if (!post) throw new Error("Post not found");
+
+      await updateDoc(doc(db, "forum", postId), {
+        comments: post.comments.filter((c) => c.id !== commentId),
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  return {
+    posts,
+    loading,
+    createPost,
+    updatePost,
+    deletePost,
+    addComment,
+    deleteComment,
+  };
 }
