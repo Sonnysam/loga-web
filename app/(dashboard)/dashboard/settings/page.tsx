@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { db, auth } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { Button } from "@/components/ui/button";
@@ -59,14 +59,11 @@ export default function SettingsPage() {
                 throw new Error("Passwords don't match");
             }
 
-            // Reauthenticate user before password change
             const credential = EmailAuthProvider.credential(
                 user.email,
                 passwordData.currentPassword
             );
             await reauthenticateWithCredential(user, credential);
-
-            // Update password
             await updatePassword(user, passwordData.newPassword);
 
             setPasswordData({
@@ -76,11 +73,15 @@ export default function SettingsPage() {
             });
 
             toast.success("Password updated successfully");
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error
+                ? error.message
+                : "Failed to update password";
+
             toast.error(
-                error.code === "auth/wrong-password"
+                errorMessage === "auth/wrong-password"
                     ? "Current password is incorrect"
-                    : "Failed to update password"
+                    : errorMessage
             );
             console.error("Error updating password:", error);
         } finally {

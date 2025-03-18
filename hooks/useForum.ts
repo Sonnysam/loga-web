@@ -11,6 +11,7 @@ import {
   addDoc,
   serverTimestamp,
   arrayUnion,
+  Timestamp,
 } from "firebase/firestore";
 import type { ForumPost, Comment } from "@/lib/types";
 
@@ -34,32 +35,37 @@ export function useForum() {
     return () => unsubscribe();
   }, []);
 
-  const deletePost = async (id: string) => {
+  const deletePost = async (id: string): Promise<void> => {
     try {
       await deleteDoc(doc(db, "forum", id));
     } catch (error) {
       console.error("Error deleting post:", error);
+      throw error;
     }
   };
 
-  const updatePost = async (id: string, data: Partial<ForumPost>) => {
+  const updatePost = async (
+    id: string,
+    data: Partial<Omit<ForumPost, "id">>
+  ): Promise<void> => {
     try {
       await updateDoc(doc(db, "forum", id), data);
     } catch (error) {
       console.error("Error updating post:", error);
+      throw error;
     }
   };
 
   const addComment = async (
     postId: string,
     comment: Omit<Comment, "id" | "createdAt">
-  ) => {
+  ): Promise<void> => {
     try {
       const postRef = doc(db, "forum", postId);
       const newComment = {
         ...comment,
         id: crypto.randomUUID(),
-        createdAt: serverTimestamp(),
+        createdAt: serverTimestamp() as Timestamp,
       };
 
       await updateDoc(postRef, {
@@ -67,8 +73,15 @@ export function useForum() {
       });
     } catch (error) {
       console.error("Error adding comment:", error);
+      throw error;
     }
   };
 
-  return { posts, loading, deletePost, updatePost, addComment };
+  return {
+    posts,
+    loading,
+    deletePost,
+    updatePost,
+    addComment,
+  };
 }

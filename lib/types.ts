@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export interface Event {
   id: string;
   title: string;
@@ -17,7 +19,7 @@ export interface Job {
   location: string;
   type: "full-time" | "part-time" | "contract" | "internship";
   postedBy: string;
-  postedAt: any;
+  postedAt: Timestamp;
 }
 
 export interface ForumPost {
@@ -26,7 +28,7 @@ export interface ForumPost {
   content: string;
   category: "general" | "career" | "networking" | "memories";
   author: string;
-  createdAt: any;
+  createdAt: Timestamp;
   comments: Comment[];
 }
 
@@ -34,7 +36,7 @@ export interface Comment {
   id: string;
   content: string;
   author: string;
-  createdAt: any;
+  createdAt: Timestamp;
 }
 
 export interface User {

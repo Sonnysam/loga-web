@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Briefcase, Users, MessageSquare } from "lucide-react";
+import { Calendar, Briefcase } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useRouter } from "next/navigation";
 

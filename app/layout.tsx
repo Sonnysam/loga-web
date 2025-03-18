@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import { createAdminAccount } from "@/hooks/useAuth";
+// import { createAdminAccount } from "@/hooks/useAuth";
 import { InitAdmin } from "@/components/InitAdmin";
 import { ToastProvider } from "@/components/ui/toast";
 
