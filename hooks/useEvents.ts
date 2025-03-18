@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  doc,
+  deleteDoc,
+  updateDoc,
+  Timestamp,
+} from "firebase/firestore";
 import type { Event } from "@/lib/types";
 
 export function useEvents() {
@@ -23,5 +32,23 @@ export function useEvents() {
     return () => unsubscribe();
   }, []);
 
-  return { events, loading };
+  const deleteEvent = async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, "events", id));
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      throw error;
+    }
+  };
+
+  const updateEvent = async (id: string, data: Partial<Omit<Event, "id">>): Promise<void> => {
+    try {
+      await updateDoc(doc(db, "events", id), data);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      throw error;
+    }
+  };
+
+  return { events, loading, deleteEvent, updateEvent };
 }

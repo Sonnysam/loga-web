@@ -7,7 +7,7 @@ export interface Event {
   date: string;
   venue: string;
   createdBy: string;
-  createdAt: string;
+  createdAt: Timestamp;
 }
 
 export interface Job {

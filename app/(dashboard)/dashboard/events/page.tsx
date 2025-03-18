@@ -32,6 +32,11 @@ export default function EventsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            if (!newEvent.title.trim() || !newEvent.description.trim() || !newEvent.date || !newEvent.venue.trim()) {
+                toast.error("Please fill in all fields");
+                return;
+            }
+
             await addDoc(collection(db, "events"), {
                 ...newEvent,
                 createdBy: user?.uid,

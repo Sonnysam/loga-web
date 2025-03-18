@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useJobs } from "@/hooks/useJobs";
-import { Job } from "@/lib/types";
+import type { Job } from "@/lib/types";
 import { toast } from "sonner";
 
 function JobSkeleton() {
@@ -57,14 +57,16 @@ export default function JobsPage() {
                 ...newJob,
                 requirements: newJob.requirements.split('\n').filter(r => r.trim()),
                 postedBy: user?.uid,
-                postedAt: serverTimestamp(),
             };
 
             if (editingJob) {
                 await updateJob(editingJob.id, jobData);
                 toast.success("Job updated successfully!");
             } else {
-                await addDoc(collection(db, "jobs"), jobData);
+                await addDoc(collection(db, "jobs"), {
+                    ...jobData,
+                    postedAt: serverTimestamp(),
+                });
                 toast.success("Job posted successfully!");
             }
 
