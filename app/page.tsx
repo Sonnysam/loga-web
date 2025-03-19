@@ -1,9 +1,8 @@
-
-
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, BookOpen, Calendar } from "lucide-react";
+import { DonateSheet } from "@/components/DonateSheet";
 
 export default function Home() {
   return (
@@ -12,17 +11,12 @@ export default function Home() {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
             <div className="relative w-10 h-10">
-              <Image src="/loga.png" alt="LOGA Logo" width={60} height={60} className="w-full h-full object-contain" />
+              <Image src="/loga.png" alt="LOGA Logo" width={60} height={60} className="w-full h-full" />
             </div>
-            <span className="text-xl font-bold text-[#2E008F]">LOGA</span>
+            <span className="text-xl font-bold text-[#2E008F]/60">LOGA Alumni Portal</span>
           </Link>
           <div className="space-x-2 md:space-x-4">
-            <Link href="/login">
-              <Button variant="ghost" className="text-gray-700 hover:text-[#2E008F]">Login</Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="bg-[#2E008F] text-white hover:bg-[#2E008F]/90">Sign Up</Button>
-            </Link>
+            <DonateSheet />
           </div>
         </div>
       </header>
