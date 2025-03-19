@@ -9,6 +9,8 @@ import { Job } from "@/lib/types";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatDistanceToNow } from "date-fns";
+import { Briefcase } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ManageJobsProps {
     jobs: Job[];
@@ -36,34 +38,43 @@ export function ManageJobs({ jobs }: ManageJobsProps) {
                 <CardTitle>Manage Jobs</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                    {jobs.map((job) => (
-                        <div
-                            key={job.id}
-                            className="flex items-center justify-between p-4 rounded-lg border"
-                        >
-                            <div>
-                                <h3 className="font-medium">{job.title}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {job.company} • {job.type}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Posted {formatDistanceToNow(job.postedAt.toDate(), { addSuffix: true })}
-                                </p>
+                {jobs.length === 0 ? (
+                    <EmptyState
+                        icon={Briefcase}
+                        title="No jobs posted yet"
+                        description="When jobs are posted, they'll appear here for management."
+                        className="min-h-[400px]"
+                    />
+                ) : (
+                    <div className="space-y-4">
+                        {jobs.map((job) => (
+                            <div
+                                key={job.id}
+                                className="flex items-center justify-between p-4 rounded-lg border"
+                            >
+                                <div>
+                                    <h3 className="font-medium">{job.title}</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {job.company} • {job.type}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Posted {formatDistanceToNow(job.postedAt.toDate(), { addSuffix: true })}
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDelete(job.id)}
+                                        disabled={isDeleting}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDelete(job.id)}
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

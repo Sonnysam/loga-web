@@ -13,6 +13,8 @@ import { useForum } from "@/hooks/useForum";
 import { ForumSkeleton } from "@/components/forum/ForumSkeleton";
 import { toast } from "sonner";
 import type { ForumPost as ForumPostType } from "@/lib/types";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MessageSquare } from "lucide-react";
 
 type Category = ForumPostType['category'];
 
@@ -37,6 +39,7 @@ export default function ForumPage() {
         content: "",
         category: "general",
     });
+    const [searchQuery, setSearchQuery] = useState("");
 
     const filteredPosts = selectedCategory === "all"
         ? posts
@@ -144,9 +147,19 @@ export default function ForumPage() {
                     />
                 ))}
                 {filteredPosts.length === 0 && (
-                    <div className="text-center py-10 text-muted-foreground">
-                        No posts in this category yet
-                    </div>
+                    <EmptyState
+                        icon={MessageSquare}
+                        title={searchQuery ? "No posts found" : "No posts in this category"}
+                        description={searchQuery
+                            ? "Try adjusting your search terms or check a different category."
+                            : "Be the first to start a discussion in this category!"
+                        }
+                        action={!searchQuery ? {
+                            label: "Create Post",
+                            onClick: () => setIsOpen(true)
+                        } : undefined}
+                        className="min-h-[400px] bg-muted/50"
+                    />
                 )}
             </div>
         </div>

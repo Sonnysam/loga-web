@@ -9,6 +9,8 @@ import { ForumPost } from "@/lib/types";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatDistanceToNow } from "date-fns";
+import { MessageSquare } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ManagePostsProps {
     posts: ForumPost[];
@@ -36,34 +38,43 @@ export function ManagePosts({ posts }: ManagePostsProps) {
                 <CardTitle>Manage Forum Posts</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                    {posts.map((post) => (
-                        <div
-                            key={post.id}
-                            className="flex items-center justify-between p-4 rounded-lg border"
-                        >
-                            <div>
-                                <h3 className="font-medium">{post.title}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {post.category} • {post.comments.length} comments
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Posted {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
-                                </p>
+                {posts.length === 0 ? (
+                    <EmptyState
+                        icon={MessageSquare}
+                        title="No forum posts yet"
+                        description="Forum posts will appear here once users start discussions."
+                        className="min-h-[400px]"
+                    />
+                ) : (
+                    <div className="space-y-4">
+                        {posts.map((post) => (
+                            <div
+                                key={post.id}
+                                className="flex items-center justify-between p-4 rounded-lg border"
+                            >
+                                <div>
+                                    <h3 className="font-medium">{post.title}</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {post.category} • {post.comments.length} comments
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Posted {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDelete(post.id)}
+                                        disabled={isDeleting}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDelete(post.id)}
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

@@ -13,8 +13,6 @@ import {
   addDoc,
   serverTimestamp,
   arrayUnion,
-  Timestamp,
-  getDoc,
 } from "firebase/firestore";
 import type { ForumPost, Comment } from "@/lib/types";
 import { toast } from "sonner";
@@ -75,19 +73,15 @@ export function useForum() {
   const addComment = async (postId: string, comment: Omit<Comment, "id" | "createdAt">) => {
     try {
       const postRef = doc(db, "forum", postId);
+
+      // Create comment with a regular timestamp instead of serverTimestamp
       const newComment = {
         ...comment,
         id: crypto.randomUUID(),
-        createdAt: serverTimestamp(),
+        createdAt: new Date(), // Changed from serverTimestamp()
       };
 
-      // Get current post data first
-      const postDoc = await getDoc(postRef);
-      if (!postDoc.exists()) {
-        throw new Error("Post not found");
-      }
-
-      // Update with new comment
+      // Update the post with the new comment
       await updateDoc(postRef, {
         comments: arrayUnion(newComment),
       });

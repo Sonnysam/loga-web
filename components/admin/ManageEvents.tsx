@@ -10,6 +10,8 @@ import { Event } from "@/lib/types";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { formatDistanceToNow } from "date-fns";
+import { Calendar } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ManageEventsProps {
     events: Event[];
@@ -37,31 +39,40 @@ export function ManageEvents({ events }: ManageEventsProps) {
                 <CardTitle>Manage Events</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                    {events.map((event) => (
-                        <div
-                            key={event.id}
-                            className="flex items-center justify-between p-4 rounded-lg border"
-                        >
-                            <div>
-                                <h3 className="font-medium">{event.title}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {formatDistanceToNow(event.createdAt.toDate(), { addSuffix: true })}
-                                </p>
+                {events.length === 0 ? (
+                    <EmptyState
+                        icon={Calendar}
+                        title="No events scheduled"
+                        description="Events will appear here once they're created."
+                        className="min-h-[400px]"
+                    />
+                ) : (
+                    <div className="space-y-4">
+                        {events.map((event) => (
+                            <div
+                                key={event.id}
+                                className="flex items-center justify-between p-4 rounded-lg border"
+                            >
+                                <div>
+                                    <h3 className="font-medium">{event.title}</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {formatDistanceToNow(event.createdAt.toDate(), { addSuffix: true })}
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDelete(event.id)}
+                                        disabled={isDeleting}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDelete(event.id)}
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
