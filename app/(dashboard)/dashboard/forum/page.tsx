@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, orderBy } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
@@ -29,6 +29,14 @@ import type { ForumPost } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
+const FORUM_CATEGORIES = [
+    { id: "general", label: "General Discussion" },
+    { id: "events", label: "Events" },
+    { id: "jobs", label: "Career & Jobs" },
+    { id: "alumni", label: "Alumni Network" },
+    { id: "announcements", label: "Announcements" },
+];
+
 function ForumSkeleton() {
     return (
         <Card>
@@ -46,12 +54,12 @@ function ForumSkeleton() {
 export default function ForumPage() {
     const { user, userRole } = useAuth();
     const { posts, loading, deletePost, addComment } = useForum();
+    const [selectedCategory, setSelectedCategory] = useState("general");
     const [isOpen, setIsOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<ForumPost["category"]>("general");
     const [newPost, setNewPost] = useState({
         title: "",
         content: "",
-        category: "general" as ForumPost["category"],
+        category: "general",
     });
     const [newComment, setNewComment] = useState("");
     const [commentingOn, setCommentingOn] = useState<string | null>(null);
@@ -66,21 +74,17 @@ export default function ForumPage() {
 
             await addDoc(collection(db, "forum"), {
                 ...newPost,
-                author: user?.uid,
+                createdBy: user?.uid,
                 createdAt: serverTimestamp(),
                 comments: [],
             });
 
             setIsOpen(false);
-            setNewPost({
-                title: "",
-                content: "",
-                category: "general",
-            });
-            toast.success("Post created successfully");
+            setNewPost({ title: "", content: "", category: "general" });
+            toast.success("Post created successfully!");
         } catch (error) {
-            console.error("Error creating post:", error);
             toast.error("Failed to create post");
+            console.error("Error adding post:", error);
         }
     };
 
@@ -114,52 +118,56 @@ export default function ForumPage() {
         }
     };
 
-    const filteredPosts = posts.filter((post) =>
-        activeTab === post.category
+    const filteredPosts = posts.filter(
+        (post) => selectedCategory === "all" || post.category === selectedCategory
     );
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Forum</h1>
+                <h1 className="text-3xl font-bold">Forum</h1>
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
                     <DialogTrigger asChild>
-                        <Button>Create Post</Button>
+                        <Button>Create New Post</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Create New Post</DialogTitle>
+                            <DialogTitle>Create a New Post</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <Select
+                                    value={newPost.category}
+                                    onValueChange={(value) =>
+                                        setNewPost({ ...newPost, category: value })
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {FORUM_CATEGORIES.map((category) => (
+                                            <SelectItem key={category.id} value={category.id}>
+                                                {category.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <Input
-                                placeholder="Title"
+                                placeholder="Post title"
                                 value={newPost.title}
                                 onChange={(e) =>
                                     setNewPost({ ...newPost, title: e.target.value })
                                 }
                             />
-                            <Select
-                                value={newPost.category}
-                                onValueChange={(value: ForumPost["category"]) =>
-                                    setNewPost({ ...newPost, category: value })
-                                }
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="general">General</SelectItem>
-                                    <SelectItem value="career">Career</SelectItem>
-                                    <SelectItem value="networking">Networking</SelectItem>
-                                    <SelectItem value="memories">Memories</SelectItem>
-                                </SelectContent>
-                            </Select>
                             <Textarea
                                 placeholder="Write your post..."
                                 value={newPost.content}
                                 onChange={(e) =>
                                     setNewPost({ ...newPost, content: e.target.value })
                                 }
+                                rows={5}
                             />
                             <Button type="submit">Post</Button>
                         </form>
@@ -167,100 +175,99 @@ export default function ForumPage() {
                 </Dialog>
             </div>
 
-            <Tabs defaultValue="general" onValueChange={(v) => setActiveTab(v as ForumPost["category"])}>
-                <TabsList>
-                    <TabsTrigger value="general">General</TabsTrigger>
-                    <TabsTrigger value="career">Career</TabsTrigger>
-                    <TabsTrigger value="networking">Networking</TabsTrigger>
-                    <TabsTrigger value="memories">Memories</TabsTrigger>
-                </TabsList>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+                <Button
+                    variant={selectedCategory === "all" ? "default" : "outline"}
+                    onClick={() => setSelectedCategory("all")}
+                >
+                    All
+                </Button>
+                {FORUM_CATEGORIES.map((category) => (
+                    <Button
+                        key={category.id}
+                        variant={selectedCategory === category.id ? "default" : "outline"}
+                        onClick={() => setSelectedCategory(category.id)}
+                    >
+                        {category.label}
+                    </Button>
+                ))}
+            </div>
 
-                <div className="mt-6">
-                    {loading ? (
-                        <div className="space-y-6">
-                            {[...Array(3)].map((_, i) => (
-                                <ForumSkeleton key={i} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {filteredPosts.map((post) => (
-                                <Card key={post.id}>
-                                    <CardHeader>
-                                        <CardTitle>{post.title}</CardTitle>
-                                        <p className="text-sm text-muted-foreground">
-                                            Posted {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
-                                        </p>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="whitespace-pre-wrap">{post.content}</p>
+            <div className="space-y-4">
+                {filteredPosts.map((post) => (
+                    <Card key={post.id}>
+                        <CardHeader>
+                            <CardTitle>{post.title}</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Posted {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="whitespace-pre-wrap">{post.content}</p>
 
-                                        {post.comments.length > 0 && (
-                                            <div className="mt-4 space-y-3">
-                                                <h3 className="font-medium">Comments</h3>
-                                                {post.comments.map((comment) => (
-                                                    <div key={comment.id} className="pl-4 border-l-2">
-                                                        <p>{comment.content}</p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true })}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                    <CardFooter className="flex flex-col items-start gap-4">
-                                        {commentingOn === post.id ? (
-                                            <div className="w-full space-y-2">
-                                                <Textarea
-                                                    placeholder="Write a comment..."
-                                                    value={newComment}
-                                                    onChange={(e) => setNewComment(e.target.value)}
-                                                />
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleComment(post.id)}
-                                                    >
-                                                        Post Comment
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => setCommentingOn(null)}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setCommentingOn(post.id)}
-                                            >
-                                                Add Comment
-                                            </Button>
-                                        )}
+                            {post.comments.length > 0 && (
+                                <div className="mt-4 space-y-3">
+                                    <h3 className="font-medium">Comments</h3>
+                                    {post.comments.map((comment) => (
+                                        <div key={comment.id} className="pl-4 border-l-2">
+                                            <p>{comment.content}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true })}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                        <CardFooter className="flex flex-col items-start gap-4">
+                            {commentingOn === post.id ? (
+                                <div className="w-full space-y-2">
+                                    <Textarea
+                                        placeholder="Write a comment..."
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            onClick={() => handleComment(post.id)}
+                                        >
+                                            Post Comment
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => setCommentingOn(null)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCommentingOn(post.id)}
+                                >
+                                    Add Comment
+                                </Button>
+                            )}
 
-                                        {(userRole?.isAdmin || user?.uid === post.author) && (
-                                            <div className="flex gap-2 mt-2">
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() => handleDeletePost(post.id)}
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </CardFooter>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </Tabs>
+                            {(userRole?.isAdmin || user?.uid === post.author) && (
+                                <div className="flex gap-2 mt-2">
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => handleDeletePost(post.id)}
+                                    >
+                                        Delete
+                                    </Button>
+                                </div>
+                            )}
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
         </div>
     );
 } 

@@ -21,6 +21,14 @@ import { useJobs } from "@/hooks/useJobs";
 import type { Job } from "@/lib/types";
 import { toast } from "sonner";
 
+const JOB_TYPES = [
+    { id: "full-time", label: "Full Time" },
+    { id: "part-time", label: "Part Time" },
+    { id: "contract", label: "Contract" },
+    { id: "internship", label: "Internship" },
+    { id: "remote", label: "Remote" },
+];
+
 function JobSkeleton() {
     return (
         <Card>
@@ -44,45 +52,48 @@ export default function JobsPage() {
     const [newJob, setNewJob] = useState({
         title: "",
         company: "",
+        location: "",
+        type: "full-time",
         description: "",
         requirements: "",
-        location: "",
-        type: "full-time" as Job["type"],
+        contactEmail: "",
+        salary: "",
+        applicationLink: "",
+        deadline: "",
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const jobData = {
-                ...newJob,
-                requirements: newJob.requirements.split('\n').filter(r => r.trim()),
-                postedBy: user?.uid,
-            };
-
-            if (editingJob) {
-                await updateJob(editingJob.id, jobData);
-                toast.success("Job updated successfully!");
-            } else {
-                await addDoc(collection(db, "jobs"), {
-                    ...jobData,
-                    postedAt: serverTimestamp(),
-                });
-                toast.success("Job posted successfully!");
+            if (!newJob.title.trim() || !newJob.company.trim() || !newJob.description.trim()) {
+                toast.error("Please fill in all required fields");
+                return;
             }
+
+            await addDoc(collection(db, "jobs"), {
+                ...newJob,
+                postedBy: user?.uid,
+                postedAt: serverTimestamp(),
+                requirements: newJob.requirements.split('\n').filter(r => r.trim()),
+            });
 
             setIsOpen(false);
             setNewJob({
                 title: "",
                 company: "",
-                description: "",
-                requirements: "",
                 location: "",
                 type: "full-time",
+                description: "",
+                requirements: "",
+                contactEmail: "",
+                salary: "",
+                applicationLink: "",
+                deadline: "",
             });
-            setEditingJob(null);
+            toast.success("Job posted successfully!");
         } catch (error) {
-            toast.error("Failed to save job. Please try again.");
-            console.error("Error saving job:", error);
+            toast.error("Failed to post job");
+            console.error("Error adding job:", error);
         }
     };
 
@@ -91,10 +102,14 @@ export default function JobsPage() {
         setNewJob({
             title: job.title,
             company: job.company,
-            description: job.description,
-            requirements: job.requirements.join('\n'),
             location: job.location,
             type: job.type,
+            description: job.description,
+            requirements: job.requirements.join('\n'),
+            contactEmail: job.contactEmail,
+            salary: job.salary,
+            applicationLink: job.applicationLink,
+            deadline: job.deadline,
         });
         setIsOpen(true);
     };
@@ -173,10 +188,11 @@ export default function JobsPage() {
                                     <SelectValue placeholder="Select job type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="full-time">Full Time</SelectItem>
-                                    <SelectItem value="part-time">Part Time</SelectItem>
-                                    <SelectItem value="contract">Contract</SelectItem>
-                                    <SelectItem value="internship">Internship</SelectItem>
+                                    {JOB_TYPES.map((type) => (
+                                        <SelectItem key={type.id} value={type.id}>
+                                            {type.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <Button type="submit">
