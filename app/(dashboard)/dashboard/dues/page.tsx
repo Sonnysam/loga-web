@@ -22,22 +22,23 @@ export default function DuesPage() {
         amount: 1000, // 10 GHS in pesewas
         publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
         currency: "GHS",
-    };
-
-    const onSuccess = (reference: any) => {
-        processPayment(reference.reference);
-        setIsPaymentInitiated(false);
-    };
-
-    const onClose = () => {
-        setIsPaymentInitiated(false);
+        onSuccess: (reference: any) => {
+            processPayment(reference.reference);
+            setIsPaymentInitiated(false);
+        },
+        onClose: () => {
+            setIsPaymentInitiated(false);
+        },
     };
 
     const initializePayment = usePaystackPayment(config);
 
     const handlePayment = () => {
         setIsPaymentInitiated(true);
-        initializePayment(onSuccess, onClose);
+        initializePayment({
+            onSuccess: config.onSuccess,
+            onClose: config.onClose
+        });
     };
 
     const isPaymentDisabled = userData?.duesStatus === 'paid';
