@@ -14,22 +14,24 @@ import { ForumSkeleton } from "@/components/forum/ForumSkeleton";
 import { toast } from "sonner";
 import type { ForumPost as ForumPostType } from "@/lib/types";
 
+type Category = ForumPostType['category'];
+
 const FORUM_CATEGORIES = [
-    { id: "general" as const, label: "General Discussion" },
-    { id: "career" as const, label: "Career" },
-    { id: "networking" as const, label: "Networking" },
-    { id: "memories" as const, label: "Memories" },
+    { id: "general" as Category, label: "General Discussion" },
+    { id: "career" as Category, label: "Career" },
+    { id: "networking" as Category, label: "Networking" },
+    { id: "memories" as Category, label: "Memories" },
 ] as const;
 
 export default function ForumPage() {
     const { user } = useAuth();
     const { posts, loading, addPost, addComment } = useForum();
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<string>("general");
+    const [selectedCategory, setSelectedCategory] = useState<Category | "all">("general");
     const [newPost, setNewPost] = useState<{
         title: string;
         content: string;
-        category: ForumPostType['category'];
+        category: Category;
     }>({
         title: "",
         content: "",
@@ -73,7 +75,7 @@ export default function ForumPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <Tabs defaultValue="general" onValueChange={setSelectedCategory}>
+                <Tabs defaultValue="general" onValueChange={(value: Category | "all") => setSelectedCategory(value)}>
                     <TabsList>
                         <TabsTrigger value="all">All</TabsTrigger>
                         {FORUM_CATEGORIES.map(category => (
@@ -103,7 +105,7 @@ export default function ForumPage() {
                             <div className="space-y-2">
                                 <Select
                                     value={newPost.category}
-                                    onValueChange={(value) => setNewPost(prev => ({ ...prev, category: value }))}
+                                    onValueChange={(value: Category) => setNewPost(prev => ({ ...prev, category: value }))}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select category" />

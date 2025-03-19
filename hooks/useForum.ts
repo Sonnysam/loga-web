@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   arrayUnion,
   Timestamp,
+  getDoc,
 } from "firebase/firestore";
 import type { ForumPost, Comment } from "@/lib/types";
 import { toast } from "sonner";
@@ -77,12 +78,20 @@ export function useForum() {
       const newComment = {
         ...comment,
         id: crypto.randomUUID(),
-        createdAt: serverTimestamp() as Timestamp,
+        createdAt: serverTimestamp(),
       };
 
+      // Get current post data first
+      const postDoc = await getDoc(postRef);
+      if (!postDoc.exists()) {
+        throw new Error("Post not found");
+      }
+
+      // Update with new comment
       await updateDoc(postRef, {
         comments: arrayUnion(newComment),
       });
+
       toast.success("Comment added successfully");
     } catch (error) {
       console.error("Error adding comment:", error);

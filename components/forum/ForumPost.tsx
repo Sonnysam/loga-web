@@ -23,19 +23,18 @@ export function ForumPost({ post, onAddComment }: ForumPostProps) {
 
     const handleSubmitComment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!comment.trim()) return;
+        if (!comment.trim() || !user) return;
 
         try {
             setIsSubmitting(true);
             await onAddComment(post.id, {
                 content: comment,
-                author: user?.uid || "",
+                author: user.uid,
             });
             setComment("");
-            toast.success("Comment added successfully");
         } catch (error) {
-            toast.error("Failed to add comment");
             console.error("Error adding comment:", error);
+            toast.error("Failed to add comment");
         } finally {
             setIsSubmitting(false);
         }
