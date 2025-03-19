@@ -2,24 +2,16 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { JobCard } from "@/components/jobs/JobCard";
 import { useJobs } from "@/hooks/useJobs";
-import type { Job } from "@/lib/types";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import type { Job } from "@/lib/types";
 
 const JOB_TYPES = [
     { id: "full-time", label: "Full Time" },
@@ -29,26 +21,10 @@ const JOB_TYPES = [
     { id: "remote", label: "Remote" },
 ];
 
-function JobSkeleton() {
-    return (
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-6 w-2/3" />
-            </CardHeader>
-            <CardContent className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-            </CardContent>
-        </Card>
-    );
-}
-
 export default function JobsPage() {
     const { user, userRole } = useAuth();
-    const { jobs, loading, deleteJob: removeJob, updateJob } = useJobs();
+    const { jobs, loading, addJob, deleteJob } = useJobs();
     const [isOpen, setIsOpen] = useState(false);
-    const [editingJob, setEditingJob] = useState<Job | null>(null);
     const [newJob, setNewJob] = useState({
         title: "",
         company: "",
@@ -70,10 +46,9 @@ export default function JobsPage() {
                 return;
             }
 
-            await addDoc(collection(db, "jobs"), {
+            await addJob({
                 ...newJob,
-                postedBy: user?.uid,
-                postedAt: serverTimestamp(),
+                postedBy: user?.uid || "",
                 requirements: newJob.requirements.split('\n').filter(r => r.trim()),
             });
 
@@ -90,39 +65,27 @@ export default function JobsPage() {
                 applicationLink: "",
                 deadline: "",
             });
-            toast.success("Job posted successfully!");
         } catch (error) {
-            toast.error("Failed to post job");
             console.error("Error adding job:", error);
         }
     };
 
-    const handleEdit = (job: Job) => {
-        setEditingJob(job);
-        setNewJob({
-            title: job.title,
-            company: job.company,
-            location: job.location,
-            type: job.type,
-            description: job.description,
-            requirements: job.requirements.join('\n'),
-            contactEmail: job.contactEmail,
-            salary: job.salary,
-            applicationLink: job.applicationLink,
-            deadline: job.deadline,
-        });
-        setIsOpen(true);
-    };
-
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (jobId: string) => {
+        if (!confirm("Are you sure you want to delete this job?")) return;
         try {
-            await removeJob(id);
-            toast.success("Job deleted successfully!");
+            await deleteJob(jobId);
         } catch (error) {
-            toast.error("Failed to delete job.");
             console.error("Error deleting job:", error);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-[50vh]">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -132,143 +95,131 @@ export default function JobsPage() {
                     <DialogTrigger asChild>
                         <Button>Post Job</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px]">
+                    <DialogContent className="max-w-2xl">
                         <DialogHeader>
-                            <DialogTitle>{editingJob ? "Edit Job" : "Post New Job"}</DialogTitle>
+                            <DialogTitle>Post a New Job</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <Input
-                                placeholder="Job Title"
-                                value={newJob.title}
-                                onChange={(e) =>
-                                    setNewJob({ ...newJob, title: e.target.value })
-                                }
-                                required
-                            />
-                            <Input
-                                placeholder="Company"
-                                value={newJob.company}
-                                onChange={(e) =>
-                                    setNewJob({ ...newJob, company: e.target.value })
-                                }
-                                required
-                            />
-                            <Textarea
-                                placeholder="Job Description"
-                                value={newJob.description}
-                                onChange={(e) =>
-                                    setNewJob({ ...newJob, description: e.target.value })
-                                }
-                                required
-                            />
-                            <Textarea
-                                placeholder="Requirements (one per line)"
-                                value={newJob.requirements}
-                                onChange={(e) =>
-                                    setNewJob({ ...newJob, requirements: e.target.value })
-                                }
-                                required
-                            />
-                            <Input
-                                placeholder="Location"
-                                value={newJob.location}
-                                onChange={(e) =>
-                                    setNewJob({ ...newJob, location: e.target.value })
-                                }
-                                required
-                            />
-                            <Select
-                                value={newJob.type}
-                                onValueChange={(value) =>
-                                    setNewJob({ ...newJob, type: value as Job["type"] })
-                                }
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select job type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {JOB_TYPES.map((type) => (
-                                        <SelectItem key={type.id} value={type.id}>
-                                            {type.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Button type="submit">
-                                {editingJob ? "Update Job" : "Post Job"}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Input
+                                        placeholder="Job Title *"
+                                        value={newJob.title}
+                                        onChange={(e) => setNewJob(prev => ({ ...prev, title: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Input
+                                        placeholder="Company Name *"
+                                        value={newJob.company}
+                                        onChange={(e) => setNewJob(prev => ({ ...prev, company: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Input
+                                        placeholder="Location"
+                                        value={newJob.location}
+                                        onChange={(e) => setNewJob(prev => ({ ...prev, location: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Select
+                                        value={newJob.type}
+                                        onValueChange={(value) => setNewJob(prev => ({ ...prev, type: value }))}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Job Type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {JOB_TYPES.map(type => (
+                                                <SelectItem key={type.id} value={type.id}>
+                                                    {type.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Textarea
+                                    placeholder="Job Description *"
+                                    value={newJob.description}
+                                    onChange={(e) => setNewJob(prev => ({ ...prev, description: e.target.value }))}
+                                    rows={4}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Textarea
+                                    placeholder="Requirements (one per line)"
+                                    value={newJob.requirements}
+                                    onChange={(e) => setNewJob(prev => ({ ...prev, requirements: e.target.value }))}
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Input
+                                        type="email"
+                                        placeholder="Contact Email"
+                                        value={newJob.contactEmail}
+                                        onChange={(e) => setNewJob(prev => ({ ...prev, contactEmail: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Input
+                                        placeholder="Salary Range"
+                                        value={newJob.salary}
+                                        onChange={(e) => setNewJob(prev => ({ ...prev, salary: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Input
+                                        placeholder="Application Link"
+                                        value={newJob.applicationLink}
+                                        onChange={(e) => setNewJob(prev => ({ ...prev, applicationLink: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Input
+                                        type="date"
+                                        placeholder="Application Deadline"
+                                        value={newJob.deadline}
+                                        onChange={(e) => setNewJob(prev => ({ ...prev, deadline: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+
+                            <Button type="submit" className="w-full">
+                                Post Job
                             </Button>
                         </form>
                     </DialogContent>
                 </Dialog>
             </div>
 
-            {loading ? (
-                <div className="grid gap-4">
-                    <JobSkeleton />
-                    <JobSkeleton />
-                    <JobSkeleton />
-                </div>
-            ) : jobs.length === 0 ? (
-                <Card>
-                    <CardContent className="py-8">
-                        <div className="text-center">
-                            <h3 className="text-lg font-semibold">No jobs posted yet</h3>
-                            <p className="text-muted-foreground mt-1">
-                                Be the first to post a job opportunity
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="grid gap-4">
-                    {jobs.map((job) => (
-                        <Card key={job.id}>
-                            <CardHeader>
-                                <CardTitle>{job.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="font-medium text-primary">{job.company}</p>
-                                <p className="text-muted-foreground mb-2">{job.description}</p>
-                                <div className="space-y-2">
-                                    <p className="text-sm">
-                                        <strong>Location:</strong> {job.location}
-                                    </p>
-                                    <p className="text-sm">
-                                        <strong>Type:</strong> {job.type}
-                                    </p>
-                                    <div className="text-sm">
-                                        <strong>Requirements:</strong>
-                                        <ul className="list-disc list-inside mt-1">
-                                            {job.requirements.map((req, i) => (
-                                                <li key={i}>{req}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </CardContent>
-                            {(userRole?.isAdmin || user?.uid === job.postedBy) && (
-                                <CardFooter className="gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleEdit(job)}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => handleDelete(job.id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </CardFooter>
-                            )}
-                        </Card>
-                    ))}
-                </div>
-            )}
+            <div className="space-y-6">
+                {jobs.map((job) => (
+                    <JobCard
+                        key={job.id}
+                        job={job}
+                        onDelete={userRole?.isAdmin ? handleDelete : undefined}
+                    />
+                ))}
+                {jobs.length === 0 && (
+                    <div className="text-center py-10 text-muted-foreground">
+                        No jobs posted yet
+                    </div>
+                )}
+            </div>
         </div>
     );
 } 

@@ -10,6 +10,10 @@ import { useForum } from "@/hooks/useForum";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
+import { ManageEvents } from "@/components/admin/ManageEvents";
+import { ManageJobs } from "@/components/admin/ManageJobs";
+import { ManageUsers } from "@/components/admin/ManageUsers";
+import { ManagePosts } from "@/components/admin/ManagePosts";
 
 export default function AdminDashboard() {
     const { userRole, isLoading } = useAuth();

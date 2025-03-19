@@ -28,6 +28,7 @@ export interface ForumPost {
   content: string;
   category: "general" | "career" | "networking" | "memories";
   author: string;
+  authorName: string;
   createdAt: Timestamp;
   comments: Comment[];
 }
