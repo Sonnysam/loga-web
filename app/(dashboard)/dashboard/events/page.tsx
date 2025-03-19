@@ -157,7 +157,7 @@ export default function EventsPage() {
                                 <div className="flex items-center">
                                     <Calendar className="h-4 w-4 mr-1" />
                                     {new Date(event.date).toLocaleDateString()}
-                                    {event.time && ` at ${event.time}`}
+                                    {event.time ? ` at ${event.time}` : ''}
                                 </div>
                                 <div className="flex items-center">
                                     <MapPin className="h-4 w-4 mr-1" />

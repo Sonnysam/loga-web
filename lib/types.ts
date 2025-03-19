@@ -5,9 +5,11 @@ export interface Event {
   title: string;
   description: string;
   date: string;
+  time?: string;
   venue: string;
   createdBy: string;
   createdAt: Timestamp;
+  registrationLink?: string;
 }
 
 export interface Job {
