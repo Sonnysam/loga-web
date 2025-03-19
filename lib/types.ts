@@ -40,6 +40,16 @@ export interface Comment {
   createdAt: Timestamp;
 }
 
+export interface DuesPayment {
+  id: string;
+  userId: string;
+  amount: number;
+  status: "pending" | "paid";
+  paymentDate: Timestamp;
+  nextDueDate: Timestamp;
+  reference: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -50,4 +60,7 @@ export interface User {
   institution: string;
   isAdmin: boolean;
   createdAt: string;
+  lastDuesPayment?: Timestamp;
+  nextDueDate?: Timestamp;
+  duesStatus: "paid" | "pending";
 }

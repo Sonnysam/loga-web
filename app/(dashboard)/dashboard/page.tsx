@@ -2,9 +2,11 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Briefcase } from "lucide-react";
+import { Calendar, Briefcase, CreditCard } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { differenceInDays } from "date-fns";
 
 export default function Dashboard() {
     const { userData } = useAuth();
@@ -20,6 +22,36 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="relative overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Dues Status</CardTitle>
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-2xl font-bold">GHS 10.00</div>
+                                <p className="text-xs text-muted-foreground">Monthly dues</p>
+                            </div>
+                            <span className={cn(
+                                "px-2 py-1 rounded-full text-xs",
+                                userData?.duesStatus === "paid"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                            )}>
+                                {userData?.duesStatus === "paid" ? "Paid" : "Pending"}
+                            </span>
+                        </div>
+                        {userData?.duesStatus === "paid" && userData?.nextDueDate && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                                Dues renew in {differenceInDays(userData.nextDueDate.toDate(), new Date())} days
+                            </p>
+                        )}
+                    </CardContent>
+                    {userData?.duesStatus !== "paid" && (
+                        <div className="absolute inset-x-0 bottom-0 h-1 bg-yellow-500" />
+                    )}
+                </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Events</CardTitle>

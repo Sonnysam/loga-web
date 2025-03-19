@@ -14,6 +14,7 @@ import { ManageEvents } from "@/components/admin/ManageEvents";
 import { ManageJobs } from "@/components/admin/ManageJobs";
 import { ManageUsers } from "@/components/admin/ManageUsers";
 import { ManagePosts } from "@/components/admin/ManagePosts";
+import type { User } from "@/lib/types";
 
 export default function AdminDashboard() {
     const { userRole, isLoading } = useAuth();
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
     const { jobs } = useJobs();
     const { posts } = useForum();
     const [userCount, setUserCount] = useState(0);
+    const [users, setUsers] = useState<User[]>([]);
     const router = useRouter();
 
     useEffect(() => {
@@ -28,9 +30,14 @@ export default function AdminDashboard() {
             router.push("/dashboard");
         }
 
-        // Real-time user count
+        // Real-time user count and users data
         const unsubscribe = onSnapshot(query(collection(db, "users")), (snapshot) => {
             setUserCount(snapshot.size);
+            const usersList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as User[];
+            setUsers(usersList);
         });
 
         return () => unsubscribe();
@@ -89,7 +96,19 @@ export default function AdminDashboard() {
                 </Card>
             </div>
 
-            {/* Add management sections */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Dues Collection</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">
+                        {users.filter(user => user.duesStatus === "paid").length} / {userCount}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Paid members</p>
+                </CardContent>
+            </Card>
+
+            {/* Management sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ManageEvents events={events} />
                 <ManageJobs jobs={jobs} />

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Briefcase, MessageSquare, Settings, LogOut, Menu, X, Shield } from "lucide-react";
+import { Home, Calendar, Briefcase, MessageSquare, Settings, LogOut, Menu, X, Shield, CreditCard } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/events", label: "Events", icon: Calendar },
         { href: "/dashboard/jobs", label: "Job Board", icon: Briefcase },
         { href: "/dashboard/forum", label: "Forum", icon: MessageSquare },
+        { href: "/dashboard/dues", label: "Dues", icon: CreditCard },
         { href: "/dashboard/settings", label: "Settings", icon: Settings },
         ...(userRole?.isAdmin
             ? [{ href: "/dashboard/admin", label: "Admin", icon: Shield }]

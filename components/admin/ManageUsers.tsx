@@ -10,6 +10,7 @@ import { collection, onSnapshot, query, doc, updateDoc, deleteDoc } from "fireba
 import { db } from "@/lib/firebase";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { differenceInDays } from "date-fns";
 
 interface ManageUsersProps {
     userCount: number;
@@ -108,7 +109,22 @@ export function ManageUsers({ userCount }: ManageUsersProps) {
                                     {user.yearGroup} • {user.occupation}
                                 </p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
+                                <div className="flex flex-col items-end text-xs">
+                                    <span className={cn(
+                                        "px-2 py-1 rounded-full",
+                                        user.duesStatus === "paid"
+                                            ? "bg-green-100 text-green-800"
+                                            : "bg-yellow-100 text-yellow-800"
+                                    )}>
+                                        {user.duesStatus === "paid" ? "Paid" : "Pending"}
+                                    </span>
+                                    {user.nextDueDate && user.duesStatus === "paid" && (
+                                        <span className="text-muted-foreground mt-1">
+                                            Renews in {differenceInDays(user.nextDueDate.toDate(), new Date())} days
+                                        </span>
+                                    )}
+                                </div>
                                 <Button
                                     variant={user.isAdmin ? "default" : "outline"}
                                     size="sm"
